@@ -8,8 +8,9 @@
 
 shinyUI(
   pageWithSidebar(
-    # Application Title
+    ####Application Title####
     headerPanel(h1("Predicting the Next Word in a Phrase",align = "center")),
+    ####Side Panel Format.####
     sidebarPanel(width = 5,
       textInput('stringentry', 'Enter a Phrase: ', value = "Example: Try this Shiny prediction application..."),
       submitButton('Submit'),
@@ -21,6 +22,7 @@ shinyUI(
     ),
     mainPanel(width = 7,
               tabsetPanel(
+                ####First Tab of the Main Panel.#### 
                 tabPanel('Prediction',h4('Search words selected for the prediction:'),
                          verbatimTextOutput("inputValue"),
                          h4('The best candidate for the next word in the phrase:'),
@@ -32,6 +34,7 @@ shinyUI(
                          h6 ('4) The last 3 key words are selected as search words. (NA = Missing a search word.)'),
                          h6 ('5) The search words are used to scan for the most likely next word.')
                          ),
+                ####Second Tab of the Main Panel.####
                 tabPanel('Detail',h4('List of top next word candidates by relative frequencies: '),
                          tableOutput("others"),
                          h4 ('Selecting the Top Candidate'),

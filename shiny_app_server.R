@@ -7,7 +7,7 @@
 ###################################################
 
 ###################################################
-####-------------PREPROCESSING-----------------####
+#################PREPROCESSING#####################
 ###################################################
 
 ####Load Libraries.
@@ -34,7 +34,7 @@ apos <- "[\\']|[’]"
 extraChars <- "[:digit:]|[:punct:]"
 extraWhite <- "([ ]{2,})"
 
-####Function for Cleaning the Text.
+####Function for Cleaning the Text of the Input Phrase.
 Preprocessing <- function(phraseEntry) {
   phrase <- str_replace_all(phraseEntry, apos,"")
   phrase <- str_replace_all(phrase, extraChars," ")
@@ -51,14 +51,14 @@ Preprocessing <- function(phraseEntry) {
   phraseSearch
 }
 
-####Function for Making a Prediction.
+####Function for Making the Prediction.
 Prediction <- function(phraseSearch) {
   ####Parse the Search Words.
   searchWord1 <- word(phraseSearch, -1)
   searchWord2 <- word(phraseSearch, -2)
   searchWord3 <- word(phraseSearch, -3)
   
-  ####Search Trigrams.
+  ####Search Trigrams with Weightings Added to Frequencies (2,1,0.4).
   grepMinusOne <- modelTrigram[modelTrigram$SearchOne==searchWord1,]
   grepMinusOne$TrigramFreq <- grepMinusOne$TrigramFreq * 2
   candidates <- grepMinusOne
@@ -94,13 +94,14 @@ Prediction <- function(phraseSearch) {
   grepFinalists[1,1]
 }
 
+####Function for Making the Finalist List.
 Finalists <- function(phraseSearch) {
   ####Parse the Search Words.
   searchWord1 <- word(phraseSearch, -1)
   searchWord2 <- word(phraseSearch, -2)
   searchWord3 <- word(phraseSearch, -3)
   
-  ####Search Trigrams.
+  ####Search Trigrams with Weightings Added to Frequencies (4,2,1,0.5).
   grepMinusOne <- modelTrigram[modelTrigram$SearchOne==searchWord1,]
   grepMinusOne$TrigramFreq <- grepMinusOne$TrigramFreq * 4
   candidates <- grepMinusOne
@@ -141,10 +142,10 @@ Finalists <- function(phraseSearch) {
 }
 
 ###################################################
-####------------SHINY PROCESSING--------------#####
+################SHINY PROCESSING###################
 ###################################################
 
-
+####Use the Functions from Above to Pass Outputs to the UI.
 shinyServer(
   function(input, output) {
     output$inputValue <- renderText({Preprocessing(input$stringentry)})

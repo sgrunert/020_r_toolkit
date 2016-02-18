@@ -1,0 +1,68 @@
+Next Word Prediction
+========================================================
+author: Steve Grunert
+date:   August 19, 2015
+transition: fade
+
+Enter a partial phrase. Predict the next word.
+
+Following The Clues
+========================================================
+
+<small>
+In text, the words already used are clues to what will come next. Preceeding words lead to the next word, and the next, and the next, in a chain of meaning created by the author. To predict what's coming next, this protocol is used to follow the clues:
+<small>
+- Get rid of the noise, such as punctuation, other non-alpha characters, and profanity.
+- Pick the best clues, which are longer words with important meaning.
+- Pick the most recent clues, which are the final few words in the text.
+- Compare the best, most recent clues to a large sample of text from blogs, twitter, and news feeds to predict what's coming next.     
+
+</small> 
+For example, for the phrase "the flag of my country is red, white and...", the best clues are "flag", "country", "red", and "white". The most recent clues are "country", "red", and "white". These last three clue words are therefore chosen to predict the most likely next word.
+
+</small>
+
+
+The Prediction Algorithm
+========================================================
+
+<small>The main challenge for a word prediction algorithm is making it compact enough to function where there are limited resources. To this end, a large body of text was condensed into word frequency tables in the following manner to create an algorithm for next word prediction: 
+<small>
+- A random sample of 30,000 documents was taken from a much larger document set of blogs, twitter, and news feeds.
+- The sample was cleaned to remove punctuation and non-alpha characters.
+- The sample was standardized to be lower case with single spacing between words.
+- Non-useful words such as profanity and short words (articles, forms of be, etc.) were removed.
+- The text was broken into trigrams (3-words series) and unigrams (single words).
+- Frequency counts for the trigrams and unigrams were summarized into tables.
+
+</small></small>
+
+The Prediction Application
+========================================================
+
+<small>The prediction algorithm was incorporated into an RStudio Shiny application. This application takes a partial phrase input, reduces it to key search words, and matches those words to the algorithm tables, picking the most likely next word. Matches are on the first two words of individual trigrams, the third word of the trigram becomes a prediction candidate. Weighting factors are applied to amplify the most valid matches. Ties are resolved based on the highest unigram frequency of the tied candidates. After comparing many approaches, this design was chosen for the following advantages:
+<small>
+- The application is compact yet still relatively accurate.
+- Most of the processing is done in advance when creating the algorithm frequency tables, reducing processing at runtime, making the application fast.
+- Very large trigram/unigram frequency tables can be constructed by combining separate, smaller frequency tables. This gets around memory limitations in the development environment.
+
+</small></small>
+
+
+Using the Application
+========================================================
+
+<small>Go to the application URL. Follow the steps below to submit a partial phrase and receive a prediction of the next word in that phrase:
+
+Application URL: sgrunert.shinyapps.io/CapstoneProject
+<small>
+
+1) Choose a document from a source such as a blog, twitter, or news feed.     
+2) Take a phrase from the document and enter it into the input field provided.     
+3) Click submit.     
+4) The application will display the key search words chosen from the phrase.     
+5) The application will also display a prediction of the next word based on the search words.     
+6) Select the second tab in the application to see the top candidates for the prediction and their relative frequencies.     
+
+</small></small>
+

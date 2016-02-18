@@ -1,0 +1,198 @@
+NOAA Storm Database Impact Analysis on Health and Economic Loss
+========================================================
+#### Author:  Steve Grunert  
+#### Created: 19 February, 2015  
+
+## Synopsis
+
+  This study used data from the U.S. National Oceanic and Atmospheric Administration (NOAA) storm database to investigate the impact of storms on public health and economic loss. The hypothesis of the study was that specific storm types can be linked to causing the greatest harm to the public, and the greatest economic loss. Public harm was measured as both fatal and non-fatal injuries. Economic loss was measured as dollar losses from storm damage to property and crops.
+  The NOAA storm data, available for the 61 year period from 1950 through 2011, showed tornadoes caused the most harm to the public, by a wide margin. Flooding caused the greatest economic loss. Hail and thunderstorm wind also caused significant economic loss.
+
+## Data Processing.
+
+  The NOAA storm database is available at: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2
+
+#### 1) Download the raw data file, unzip the file, and load the file into R.
+
+```{r download, echo=TRUE, results="hide", cache=TRUE, fig.width=7, fig.height=6}
+
+## Obtain raw data from the NOAA database.
+
+#fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+#download.file(fileUrl,destfile ="repdata_data_StormData.csv.bz2") # Download the data.
+
+#library(R.utils)
+
+#bunzip2(filename = "repdata_data_StormData.csv.bz2"
+#        , destname = "repdata_data_StormData.csv"
+#        , remove = FALSE)                             # Unzip the data.
+
+sourceData <- read.csv("repdata_data_StormData.csv"
+        ,stringsAsFactors = FALSE)                    # Read the file into R.
+
+```
+
+
+#### 2) Subset the raw data and tidy-up alternative spellings in the key factors.
+
+```{r loadclean, echo=TRUE, results="hide", cache=TRUE, fig.width=7, fig.height=6}
+
+## Subset the required columns.
+subsetData <- subset(sourceData, select=c(REFNUM, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP))
+
+## Correct for the use of upper and lower cases in the damage multiplier value.
+subsetData$PROPDMGEXP <- toupper(subsetData$PROPDMGEXP)
+subsetData$CROPDMGEXP <- toupper(subsetData$CROPDMGEXP)
+
+## Correct for multiple spellings of thunderstorm wind as an event type.
+subsetData$EVTYPE[grepl("Thunder", subsetData$EVTYPE
+        , ignore.case = TRUE)] <- "THUNDERSTORM WIND"  
+subsetData$EVTYPE[grepl("TSTM W", subsetData$EVTYPE
+        , ignore.case = TRUE)] <- "THUNDERSTORM WIND" 
+
+## Correct for multiple spellings of flood as an event type.
+subsetData$EVTYPE[grepl("Flood", subsetData$EVTYPE
+        , ignore.case = TRUE)] <- "FLOODING"
+
+## Correct for multiple spellings of tornado as an event type.
+subsetData$EVTYPE[grepl("Torn", subsetData$EVTYPE
+        , ignore.case = TRUE)] <- "TORNADO"
+subsetData$EVTYPE[grepl("Waterspout", subsetData$EVTYPE
+        , ignore.case = TRUE)] <- "TORNADO" 
+
+```
+
+
+#### 3) Transform the data subset, adding columns for the aggregation step.
+
+```{r transform, echo=TRUE, results="hide", cache=TRUE, fig.width=7, fig.height=6}
+
+## Add new columns for calculated damage dollar amounts.
+subsetData$cropDamage<-subsetData$REFNUM
+subsetData$propDamage<-subsetData$REFNUM
+subsetData$totalDamage<-subsetData$REFNUM
+
+
+## Populate columns for property and crop calculated actual damage.
+subsetData$cropDamage[subsetData$CROPDMGEXP=="K"]  <- subsetData$CROPDMG[subsetData$CROPDMGEXP=="K"]*1000
+subsetData$cropDamage[subsetData$CROPDMGEXP=="M"]  <- subsetData$CROPDMG[subsetData$CROPDMGEXP=="M"]*1000000
+subsetData$cropDamage[subsetData$CROPDMGEXP=="B"]  <- subsetData$CROPDMG[subsetData$CROPDMGEXP=="B"]*1000000000
+subsetData$propDamage[subsetData$PROPDMGEXP=="K"]  <- subsetData$PROPDMG[subsetData$PROPDMGEXP=="K"]*1000
+subsetData$propDamage[subsetData$PROPDMGEXP=="M"]  <- subsetData$PROPDMG[subsetData$PROPDMGEXP=="M"]*1000000
+subsetData$propDamage[subsetData$PROPDMGEXP=="B"]  <- subsetData$PROPDMG[subsetData$PROPDMGEXP=="B"]*1000000000
+
+## Combine property and crop damage into a total damage column.
+subsetData$totalDamage <- (subsetData$propDamage + subsetData$cropDamage)
+
+```
+
+
+#### 4) Aggregate the data subset and select the top 10 storm events for deaths, injuries, and damage.
+
+```{r aggregate, echo=TRUE, results="hide", cache=TRUE, fig.width=7, fig.height=6}
+
+library(plyr)
+
+## Sum deaths by event type, select the top 10, and calculate deaths-per-year from 61 years of data.
+aggregate1 <- aggregate(subsetData$FATALITIES
+                    , by=list(storm=subsetData$EVTYPE)
+                    , FUN=sum)
+names(aggregate1) <- c("event_type","deaths")
+finalRows1 <- arrange(aggregate1,desc(aggregate1$deaths))
+deathsTop10 <- head(finalRows1,n=10)
+deathsTop10$deathsPerYear <- as.integer(deathsTop10$deaths/61)
+
+
+## Sum injuries by event type, select the top 10, and calculate injuries-per-year from 61 years of data.
+aggregate2 <- aggregate(subsetData$INJURIES
+                    , by=list(storm=subsetData$EVTYPE)
+                    , FUN=sum)
+names(aggregate2) <- c("event_type","injuries")
+finalRows2 <- arrange(aggregate2,desc(aggregate2$injuries))
+injuriesTop10 <- head(finalRows2,n=10)
+injuriesTop10$injuriesPerYear <- as.integer(injuriesTop10$injuries/61)
+
+
+## Sum damage by event type, select the top 10, and calculate damage-per-year in millions from 61 years of data.
+aggregate3 <- aggregate(subsetData$totalDamage
+                    , by=list(storm=subsetData$EVTYPE)
+                    , FUN=sum)
+names(aggregate3) <- c("event_type","damage")
+finalRows3 <- arrange(aggregate3,desc(aggregate3$damage))
+damageTop10 <- head(finalRows3,n=10)
+damageTop10$millionsPerYear <- as.integer(damageTop10$damage/61000000)
+
+```
+
+
+
+## Results
+
+#### Top 10 Storm Types for Deaths-per-Year.
+```{r deathsgraph, echo=TRUE, fig.width=7, fig.height=6}
+
+library(ggplot2)
+d <- ggplot(data = deathsTop10, aes(x = event_type, y = deathsPerYear)) 
+d <-d + theme_bw()
+d <-d + geom_bar(stat = "identity",fill="red",colour="black",width=.5)
+d <-d + xlab("Storm Event") 
+d <-d + ylab("Deaths")
+d <-d + ggtitle("Top 10 Storm Types for Fatalities-per-Year")
+d <-d + theme(axis.text.x = element_text(angle = 90, vjust = 0.5
+        , hjust = 1))
+
+print(d)
+
+```
+
+
+The graph above shows that tornadoes far exceed other storm types in causing deaths.
+
+
+#### Top 10 Storm Types for Injuries-per-Year.
+```{r injuriesgraph, echo=TRUE, fig.width=7, fig.height=6}
+
+library(ggplot2)
+i <- ggplot(data = injuriesTop10, aes(x = event_type, y = injuriesPerYear)) 
+i <-i + theme_bw()
+i <-i + geom_bar(stat = "identity",fill="yellow",colour="black"
+        ,width=.5)
+i <-i + xlab("Storm Event") 
+i <-i + ylab("Non-Fatal Injuries")
+i <-i + ggtitle("Top 10 Storm Types for Injuries-per-Year")
+i <-i + theme(axis.text.x = element_text(angle = 90, vjust = 0.5
+        , hjust = 1))
+
+print(i)
+
+```
+
+
+The graph above shows that tornadoes far exceed other storm types in causing non-fatal injuries, even more than tornadoes exceed other storm types for deaths.
+
+
+#### Top 10 Storm Types for Economic Loss per Year.
+```{r damagegraph, echo=TRUE, fig.width=7, fig.height=6}
+
+library(ggplot2)
+e <- ggplot(data = damageTop10, aes(x = event_type, y = millionsPerYear )) 
+e <-e + theme_bw()
+e <-e + geom_bar(stat = "identity",fill="darkgreen",colour="black"
+        ,width=.5)
+e <-e + xlab("Storm Event") 
+e <-e + ylab("Property and Crop Damage in Millions of Dollars")
+e <-e + ggtitle("Top 10 Storm Types for Economic Loss per Year")
+e <-e + theme(axis.text.x = element_text(angle = 90, vjust = 0.5
+        , hjust = 1))
+
+print(e)
+
+```
+
+
+  From the graph above, it is clear that although flooding had relatively minor fatalities and non-fatal injuries, it caused the greatest economic damage. If one also includes storm surge flooding in the general flooding category, the damage from flooding would be even more pronounced. Note that hail and thunderstorm wind also cause significant economic damage.
+
+
+#### Conclusions from Results
+
+  From the results above, it is clear that tornadoes caused the most harm to the public, both for deaths and non-fatal injuries; whereas, floods caused the most economic loss.
